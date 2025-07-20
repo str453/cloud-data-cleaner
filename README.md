@@ -45,11 +45,7 @@ Cloud Data Cleaner provides a simple, secure, cloud-based solution for encryptin
     ```
 
 2. **Backend Setup**
-    - Configure GCP and MySQL credentials in `application.properties`.
-    - Run:
-      ```sh
-      mvn spring-boot:run
-      ```
+    - Coming soon.
 
 3. **Frontend Setup**
     - Coming soon.
