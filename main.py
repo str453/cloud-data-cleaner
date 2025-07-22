@@ -24,7 +24,7 @@ DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
 # For local testing or external connections, use host and port.
 DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
-DB_PORT = os.environ.get('DB_PORT', 3306)
+DB_PORT = os.environ.get('DB_PORT', 8080)
 
 def get_db_connection():
     """Establishes a connection to the Cloud SQL database."""
