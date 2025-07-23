@@ -4,7 +4,7 @@
 # IMPORTANT: Replace these with your actual Cloud SQL instance details
 PROJECT_ID="forward-scion-465216-s9"     # Your Google Cloud Project ID from the screenshot
 REGION="us-west1"                       # Your instance region from the screenshot
-INSTANCE_NAME="forward-scion-465216-s9:us-west1:csuf454"             # *** IMPORTANT: REPLACE WITH YOUR EXACT CLOUD SQL INSTANCE ID ***
+INSTANCE_NAME="csuf454"             # *** IMPORTANT: REPLACE WITH YOUR EXACT CLOUD SQL INSTANCE ID ***
 DB_NAME="csuf454"                       # The database name you've set
 DB_USER="csuf454"                       # Your Cloud SQL database user
 
