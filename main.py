@@ -12,6 +12,7 @@ import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
 app = Flask(__name__)
 # Initialize CORS with the dynamic list of origins
 CORS(app, resources={r"/*": {"origins": allowed_origins}})
+print(f"DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}")
 
 # --- CORS Configuration (Dynamic for Codespaces) ---
 # Get the deployed Cloud Run service URL from environment variable (set by Cloud Run)
