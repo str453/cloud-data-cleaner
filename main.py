@@ -10,6 +10,8 @@ from flask_cors import CORS
 import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
 
 app = Flask(__name__)
+# Initialize CORS with the dynamic list of origins
+CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 # --- CORS Configuration (Dynamic for Codespaces) ---
 # Get the deployed Cloud Run service URL from environment variable (set by Cloud Run)
@@ -35,9 +37,6 @@ if CODESPACE_NAME:
 # Add the Cloud Run service URL itself if deployed
 if CLOUD_RUN_SERVICE_URL:
     allowed_origins.append(CLOUD_RUN_SERVICE_URL)
-
-# Initialize CORS with the dynamic list of origins
-CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 # --- JWT Configuration ---
 # IMPORTANT: Replace with a strong, random key. Use environment variables in production.
