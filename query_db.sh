@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # --- Configuration Variables ---
 # IMPORTANT: Replace these with your actual Cloud SQL instance details
 PROJECT_ID="forward-scion-465216-s9"     # Your Google Cloud Project ID from the screenshot
