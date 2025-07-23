@@ -25,7 +25,7 @@ COPY . .
 # Cloud Run injects the PORT environment variable, typically 8080.
 # Setting ENV PORT 8080 here provides a default if PORT isn't set,
 # and also informs Docker that the container intends to expose this port.
-ENV PORT 8080 
+ENV PORT 8080
 
 # Command to run when the container starts.
 # We use Gunicorn, a production-ready WSGI (Web Server Gateway Interface) server,
