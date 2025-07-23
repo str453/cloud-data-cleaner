@@ -9,7 +9,7 @@ from flask_cors import CORS
 import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for frontend communication
+CORS(app, supports_credentials=True) # Enable CORS for frontend communication
 
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'a_very_secure_random_key_that_is_at_least_32_chars_long')
 JWT_ALGORITHM = 'HS256'
