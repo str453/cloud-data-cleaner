@@ -2,21 +2,18 @@
 import os
 import datetime
 from functools import wraps
-import jwt # PyJWT library
-import bcrypt # For password hashing
+import jwt
+import bcrypt
 from flask import Flask, request, jsonify, g
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin # Import cross_origin decorator
 
-import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
+import mysql.connector
 
 app = Flask(__name__)
-# Initialize CORS with the dynamic list of origins
-CORS(app, resources={r"/*": {"origins": allowed_origins}})
-print(f"DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}")
 
-# --- CORS Configuration (Dynamic for Codespaces) ---
+# --- CORS Configuration (Dynamic for Codespaces and Explicit Headers) ---
 # Get the deployed Cloud Run service URL from environment variable (set by Cloud Run)
-CLOUD_RUN_SERVICE_URL = os.environ.get('K_SERVICE_URL') # K_SERVICE_URL is set by Cloud Run
+CLOUD_RUN_SERVICE_URL = os.environ.get('K_SERVICE_URL')
 
 # Get Codespace name if running in Codespaces
 CODESPACE_NAME = os.environ.get('CODESPACE_NAME')
@@ -30,43 +27,58 @@ allowed_origins = [
 # Add Codespaces dynamic URL if CODESPACE_NAME is set
 if CODESPACE_NAME:
     # Codespaces URLs typically follow this pattern: https://<port>-<codespace_name>-<user>.github.dev
-    # We'll allow any port for flexibility, but usually you'd be serving on 8080 or similar.
-    allowed_origins.append(f"https://*-{CODESPACE_NAME}.github.dev") 
+    # We allow any port by using a wildcard for the port segment
+    allowed_origins.append(f"https://*.-{CODESPACE_NAME}.github.dev") 
     # Also add the specific port if known, e.g., for a specific frontend dev server
-    allowed_origins.append(f"https://8080-{CODESPACE_NAME}.github.dev") # Common for web previews
+    allowed_origins.append(f"https://8080-{CODESPACE_NAME}.github.dev") 
+    # Add the exact URL from your screenshot for testing if it's consistent
+    allowed_origins.append("https://fantastic-disco-675qjg674pvg94-8080.app.github.dev")
+
 
 # Add the Cloud Run service URL itself if deployed
 if CLOUD_RUN_SERVICE_URL:
     allowed_origins.append(CLOUD_RUN_SERVICE_URL)
 
+# Initialize CORS with the dynamic list of origins
+# We explicitly allow common headers and methods.
+CORS(app, 
+     resources={r"/*": {
+         "origins": allowed_origins,
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Explicitly allow methods
+         "headers": ["Content-Type", "Authorization"],          # Explicitly allow headers
+         "expose_headers": ["Authorization"],                    # Expose if frontend needs to read them
+         "supports_credentials": True                            # Allow cookies/auth headers
+     }})
+
+# DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}
+print(f"DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}")
+
 # --- JWT Configuration ---
-# IMPORTANT: Replace with a strong, random key. Use environment variables in production.
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'a_very_secure_random_key_that_is_at_least_32_chars_long')
 JWT_ALGORITHM = 'HS256'
-JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
+JWT_EXP_DELTA_SECONDS = 3600
 
 # --- Cloud SQL Database Configuration ---
-# IMPORTANT: Configure these environment variables for your Cloud SQL instance.
-DB_USER = os.environ.get('DB_USER', 'csuf454')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'csuf')
+DB_USER = os.environ.get('DB_USER', 'your_db_user')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454') 
 
-DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH') # For Cloud Run/App Engine Unix socket
+DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
-DB_HOST = os.environ.get('DB_HOST', '127.0.0.1') # Default for local testing
-DB_PORT = os.environ.get('DB_PORT', 3306) # 3306 for MySQL, 5432 for PostgreSQL
+DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
+DB_PORT = os.environ.get('DB_PORT', 3306)
 
 def get_db_connection():
     """Establishes a connection to the Cloud SQL database."""
     try:
-        if DB_SOCKET_PATH: # Use Unix socket if path is provided (for Cloud Run/App Engine)
+        if DB_SOCKET_PATH:
             conn = mysql.connector.connect(
                 unix_socket=DB_SOCKET_PATH,
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
-        else: # Fallback to host/port for local testing or external connections
+        else:
             conn = mysql.connector.connect(
                 host=DB_HOST,
                 port=int(DB_PORT),
@@ -115,6 +127,7 @@ def health_check():
     return jsonify({"status": "ok", "message": "Cipher backend is running!"}), 200
 
 @app.route('/register', methods=['POST'])
+# @cross_origin() # This can be used for individual routes, but global CORS(app) should cover it
 def register_user():
     """Registers a new user with username (email) and password."""
     data = request.get_json()
