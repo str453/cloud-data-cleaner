@@ -26,6 +26,25 @@ DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
 DB_PORT = os.environ.get('DB_PORT', 8080)
 
+# Error 404 fix 
+from flask import Flask, send_from_directory
+
+app = Flask(__name__)
+
+# Route to serve favicon.ico from the static folder
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.static_folder, 'favicon.ico')
+
+#Other routes...
+@app.route('/')
+def hello():
+    return 'Hello World!'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
+
+
 def get_db_connection():
     """Establishes a connection to the Cloud SQL database."""
     try:
