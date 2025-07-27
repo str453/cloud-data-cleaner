@@ -17,28 +17,27 @@ JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
 
 
-DB_USER = os.environ.get('DB_USER', 'csuf454')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'csuf')
+DB_USER = os.environ.get('DB_USER', 'your_db_user')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
 DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
 # For local testing or external connections, use host and port.
 DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
-DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
+DB_PORT = os.environ.get('DB_PORT', 3306) # <--- CORRECTED: Default to 3306 for MySQL
 
 
 # --- REMOVED: Frontend-specific routes (favicon.ico, /) and duplicate app = Flask(__name__) ---
-# These routes are usually handled by a static file server (like Cloud Storage) for your frontend,
-# and removing the duplicate app instantiation is crucial for app stability.
-# If you run 'python main.py' locally for testing, you might need a simple route like '/':
-# from flask import send_from_directory # uncomment if you re-add static file serving
-# @app.route('/favicon.ico')
-# def favicon():
+# The lines below are removed from your provided main.py to fix the issues.
+# from flask import Flask, send_from_directory # This import is no longer needed if you remove the routes
+# app = Flask(__name__) # THIS DUPLICATE LINE IS REMOVED
+# @app.route('/favicon.ico') # THIS ROUTE IS REMOVED
+# def favicon(): # THIS FUNCTION IS REMOVED
 #    return send_from_directory(app.static_folder, 'favicon.ico')
-# @app.route('/')
-# def hello():
-#    return 'Hello World! Your backend is running.'
+# @app.route('/') # THIS ROUTE IS REMOVED
+# def hello(): # THIS FUNCTION IS REMOVED
+#    return 'Hello World!'
 
 
 # --- IMPORTANT: This block is ONLY for local development ---
