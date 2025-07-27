@@ -21,10 +21,14 @@ DB_USER = os.environ.get('DB_USER', 'your_db_user')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
+# DB_SOCKET_PATH is automatically set by Cloud Run when --add-cloudsql-instances is used.
+# Your code uses this if it's present, which is the correct way for Cloud Run.
 DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
-# For local testing or external connections, use host and port.
-DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
+# DB_HOST is only a fallback for local testing without the proxy.
+# If you are deploying to Cloud Run with --add-cloudsql-instances, this will NOT be used for connection.
+# Setting it to 127.0.0.1 (localhost) is standard for local proxy testing.
+DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
 DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
 
 
@@ -41,17 +45,20 @@ if __name__ == '__main__':
 def get_db_connection():
     """Establishes a connection to the Cloud SQL database."""
     try:
-        if DB_SOCKET_PATH: # Use Unix socket if path is provided (for Cloud Run/App Engine)
+        # Prioritize Unix socket for Cloud Run via Cloud SQL Proxy
+        if DB_SOCKET_PATH:
+            print(f"Attempting to connect via Unix socket: {DB_SOCKET_PATH}")
             conn = mysql.connector.connect(
                 unix_socket=DB_SOCKET_PATH,
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
-        else: # Fallback to host/port for local testing or external connections
+        else: # Fallback to host/port for local testing without the proxy
+            print(f"DB_SOCKET_PATH not set, attempting to connect via host/port: {DB_HOST}:{DB_PORT}")
             conn = mysql.connector.connect(
                 host=DB_HOST,
-                port=int(DB_PORT), # Ensure DB_PORT is an integer
+                port=int(DB_PORT),
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME
@@ -59,7 +66,9 @@ def get_db_connection():
         return conn
     except mysql.connector.Error as err:
         print(f"Database connection error: {err}")
-        return None
+        # Re-raise the error or log it more prominently for debugging in Cloud Run logs
+        raise # Important: Re-raise so Cloud Run sees the crash
+        return None # This line will not be reached if error is re-raised.
 
 def token_required(f):
     """Decorator to protect API endpoints, verifying JWT."""
@@ -107,8 +116,8 @@ def register_user():
     if not username or not password:
         return jsonify({"error": "Missing credentials", "message": "Username (email) and password are required"}), 400
 
-    conn = get_db_connection()
-    if conn is None:
+    conn = get_db_connection() # Connection established here
+    if conn is None: # This should now be caught by the raise in get_db_connection
         return jsonify({"error": "Database error", "message": "Could not connect to database"}), 500
 
     try:
