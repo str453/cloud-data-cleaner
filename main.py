@@ -43,7 +43,7 @@ DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
 if __name__ == '__main__':
     # Cloud Run provides a PORT environment variable. Listen on it.
     port = int(os.environ.get('PORT', 8080)) # Default to 8080 if PORT env var is not set (e.g., local)
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=8080)
 
 
 def get_db_connection():
