@@ -5,12 +5,11 @@ WORKDIR /app
 COPY . /app
 RUN echo "--- DEBUG: Listing /app contents ---" && ls -la /app
 
-RUN pip install --no-cache-dir gunicorn flask
+# Install only Flask, no gunicorn for this test
+RUN pip install --no-cache-dir flask
 
 ENV PYTHONPATH=/app
 ENV PORT 8080
 
-COPY run_gunicorn.sh /app/run_gunicorn.sh
-RUN chmod +x /app/run_gunicorn.sh
-
-CMD ["/app/run_gunicorn.sh"] # Make sure this line is present
+# New CMD: Directly run the test_app.py using Flask's built-in server
+CMD ["python3", "test_app.py"]
