@@ -2,86 +2,64 @@
 import os
 import datetime
 from functools import wraps
-import jwt
-import bcrypt
-from flask import Flask, request, jsonify, g
-from flask_cors import CORS, cross_origin # Import cross_origin decorator
-
-import mysql.connector
+import jwt # PyJWT library
+import bcrypt # For password hashing
+from flask import Flask, request, jsonify, g, send_from_directory
+from flask_cors import CORS
+import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True) # Enable CORS for frontend communication
 
-# --- CORS Configuration (Dynamic for Codespaces and Explicit Headers) ---
-# Get the deployed Cloud Run service URL from environment variable (set by Cloud Run)
-CLOUD_RUN_SERVICE_URL = os.environ.get('K_SERVICE_URL')
-
-# Get Codespace name if running in Codespaces
-CODESPACE_NAME = os.environ.get('CODESPACE_NAME')
-
-# Define allowed origins for CORS
-allowed_origins = [
-    "http://localhost:5000", # For local frontend development
-    "http://localhost:8080", # For local frontend development (if using python http.server)
-]
-
-# Add Codespaces dynamic URL if CODESPACE_NAME is set
-if CODESPACE_NAME:
-    # Codespaces URLs typically follow this pattern: https://<port>-<codespace_name>-<user>.github.dev
-    # We allow any port by using a wildcard for the port segment
-    allowed_origins.append(f"https://*.-{CODESPACE_NAME}.github.dev") 
-    # Also add the specific port if known, e.g., for a specific frontend dev server
-    allowed_origins.append(f"https://8080-{CODESPACE_NAME}.github.dev") 
-    # Add the exact URL from your screenshot for testing if it's consistent
-    allowed_origins.append("https://fantastic-disco-675qjg674pvg94-8080.app.github.dev")
-
-
-# Add the Cloud Run service URL itself if deployed
-if CLOUD_RUN_SERVICE_URL:
-    allowed_origins.append(CLOUD_RUN_SERVICE_URL)
-
-# Initialize CORS with the dynamic list of origins
-# We explicitly allow common headers and methods.
-CORS(app, 
-     resources={r"/*": {
-         "origins": allowed_origins,
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Explicitly allow methods
-         "headers": ["Content-Type", "Authorization"],          # Explicitly allow headers
-         "expose_headers": ["Authorization"],                    # Expose if frontend needs to read them
-         "supports_credentials": True                            # Allow cookies/auth headers
-     }})
-
-# DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}
-print(f"DEBUG: Flask-CORS configured with allowed_origins: {allowed_origins}")
-
-# --- JWT Configuration ---
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'a_very_secure_random_key_that_is_at_least_32_chars_long')
 JWT_ALGORITHM = 'HS256'
-JWT_EXP_DELTA_SECONDS = 3600
+JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
 
-# --- Cloud SQL Database Configuration ---
+
 DB_USER = os.environ.get('DB_USER', 'your_db_user')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
-DB_NAME = os.environ.get('DB_NAME', 'csuf454') 
+DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
 DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
-DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
-DB_PORT = os.environ.get('DB_PORT', 3306)
+# For local testing or external connections, use host and port.
+# DB_HOST will be used if DB_SOCKET_PATH is not set (e.g., local development)
+DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
+# DB_PORT for MySQL connection, should be 3306
+DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
+
+
+# Remove these lines if you are serving frontend separately (recommended)
+# @app.route('/favicon.ico')
+# def favicon():
+#    return send_from_directory(app.static_folder, 'favicon.ico')
+
+# Remove or modify this if you are serving frontend separately (recommended)
+# @app.route('/')
+# def hello():
+#    return 'Hello World! Your backend is running.'
+
+# This block is for local execution only. Cloud Run will run your app using gunicorn or similar.
+if __name__ == '__main__':
+    # Cloud Run provides a PORT environment variable. Listen on it.
+    port = int(os.environ.get('PORT', 8080)) # Default to 8080 if PORT env var is not set (e.g., local)
+    app.run(debug=True, host='0.0.0.0', port=port)
+
 
 def get_db_connection():
     """Establishes a connection to the Cloud SQL database."""
     try:
-        if DB_SOCKET_PATH:
+        if DB_SOCKET_PATH: # Use Unix socket if path is provided (for Cloud Run/App Engine)
             conn = mysql.connector.connect(
                 unix_socket=DB_SOCKET_PATH,
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
-        else:
+        else: # Fallback to host/port for local testing or external connections
             conn = mysql.connector.connect(
                 host=DB_HOST,
-                port=int(DB_PORT),
+                port=int(DB_PORT), # Ensure DB_PORT is an integer
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME
@@ -91,7 +69,6 @@ def get_db_connection():
         print(f"Database connection error: {err}")
         return None
 
-# --- Custom Authentication Decorator ---
 def token_required(f):
     """Decorator to protect API endpoints, verifying JWT."""
     @wraps(f)
@@ -106,7 +83,9 @@ def token_required(f):
             return jsonify({"error": "Unauthorized", "message": "Authentication token is missing!"}), 401
 
         try:
+            # Decode the token using the secret key and algorithm
             data = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            # Attach user_id from the token payload to Flask's global request context (g)
             g.user_id = data['user_id']
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Unauthorized", "message": "Authentication token has expired"}), 401
@@ -127,11 +106,10 @@ def health_check():
     return jsonify({"status": "ok", "message": "Cipher backend is running!"}), 200
 
 @app.route('/register', methods=['POST'])
-# @cross_origin() # This can be used for individual routes, but global CORS(app) should cover it
 def register_user():
     """Registers a new user with username (email) and password."""
     data = request.get_json()
-    username = data.get('username')
+    username = data.get('username') # This is the email
     password = data.get('password')
 
     if not username or not password:
@@ -144,16 +122,22 @@ def register_user():
     try:
         cursor = conn.cursor()
         
+        # Hash the password using bcrypt
+        # bcrypt requires bytes, so encode password and decode hash
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
+        # Check if username (email) already exists
         cursor.execute("SELECT id FROM users WHERE email = %s", (username,))
         if cursor.fetchone():
             return jsonify({"error": "Conflict", "message": "Username (email) already exists"}), 409
 
+        # Insert new user into the 'users' table
         query = "INSERT INTO users (email, password_hash) VALUES (%s, %s)"
         cursor.execute(query, (username, hashed_password))
         conn.commit()
 
+        # After successful registration, log them in immediately and return a token
+        # Get the ID of the newly created user
         user_id = cursor.lastrowid
         payload = {
             'user_id': user_id,
@@ -164,7 +148,7 @@ def register_user():
         return jsonify({"message": "User registered and logged in successfully", "token": token, "user_id": user_id}), 201
     except mysql.connector.Error as err:
         print(f"Error registering user: {err}")
-        if err.errno == 1062:
+        if err.errno == 1062: # MySQL error code for duplicate entry
             return jsonify({"error": "Conflict", "message": "Username (email) already exists"}), 409
         return jsonify({"error": "Database error", "message": f"Failed to register user: {err}"}), 500
     except Exception as e:
@@ -189,11 +173,13 @@ def login_user():
         return jsonify({"error": "Database error", "message": "Could not connect to database"}), 500
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(dictionary=True) # Return results as dictionaries
         cursor.execute("SELECT id, password_hash FROM users WHERE email = %s", (username,))
         user = cursor.fetchone()
 
+        # Verify user exists and password matches
         if user and bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            # Password matches, generate JWT
             payload = {
                 'user_id': user['id'],
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=JWT_EXP_DELTA_SECONDS)
@@ -210,7 +196,7 @@ def login_user():
             conn.close()
 
 @app.route('/save_file', methods=['POST'])
-@token_required
+@token_required # Protect this endpoint with JWT verification
 def save_file():
     """Saves a processed file to Cloud SQL."""
     data = request.get_json()
@@ -220,7 +206,7 @@ def save_file():
     file_name = data.get('fileName')
     cipher_type = data.get('cipherType')
     content = data.get('content')
-    save_type = data.get('saveType')
+    save_type = data.get('saveType') # 'private' or 'public'
 
     if not all([file_name, cipher_type, content, save_type]):
         return jsonify({"error": "Missing data", "message": "Required fields: fileName, cipherType, content, saveType"}), 400
@@ -228,6 +214,7 @@ def save_file():
     if save_type not in ['private', 'public']:
         return jsonify({"error": "Invalid save type", "message": "saveType must be 'private' or 'public'"}), 400
 
+    # Get user_id from the authenticated request context (set by @token_required)
     user_id = g.user_id
 
     conn = get_db_connection()
@@ -254,17 +241,17 @@ def save_file():
             conn.close()
 
 @app.route('/get_files', methods=['GET'])
-@token_required
+@token_required # Protect this endpoint
 def get_files():
     """Retrieves saved files for the authenticated user and public files."""
-    user_id = g.user_id
+    user_id = g.user_id # From authenticated request context
 
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "Database error", "message": "Could not connect to database"}), 500
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(dictionary=True) # Return results as dictionaries
 
         private_query = "SELECT id, file_name, cipher_type, save_type, content, timestamp FROM files WHERE user_id = %s AND save_type = 'private'"
         cursor.execute(private_query, (user_id,))
@@ -292,10 +279,10 @@ def get_files():
             conn.close()
 
 @app.route('/delete_file/<int:file_id>', methods=['DELETE'])
-@token_required
+@token_required # Protect this endpoint
 def delete_file(file_id):
     """Deletes a file, ensuring the user owns it or it's a public file."""
-    user_id = g.user_id
+    user_id = g.user_id # From authenticated request context
 
     conn = get_db_connection()
     if conn is None:
@@ -313,6 +300,7 @@ def delete_file(file_id):
 
         owner_id, save_type = file_info
 
+        
         if save_type == 'private' and owner_id != user_id:
             return jsonify({"error": "Forbidden", "message": "You do not have permission to delete this private file"}), 403
         
@@ -333,6 +321,3 @@ def delete_file(file_id):
     finally:
         if conn:
             conn.close()
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
