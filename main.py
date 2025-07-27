@@ -4,11 +4,11 @@ import datetime
 from functools import wraps
 import jwt # PyJWT library
 import bcrypt # For password hashing
-from flask import Flask, request, jsonify, g # Removed send_from_directory, not needed if frontend is separate
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 import mysql.connector
 
-# --- IMPORTANT: Only ONE Flask app instance ---
+# --- ONLY ONE Flask app instance ---
 app = Flask(__name__)
 CORS(app, supports_credentials=True) # Enable CORS for frontend communication
 
@@ -16,18 +16,19 @@ JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'a_very_secure_random_key_that
 JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
 
-DB_USER = os.environ.get('DB_USER', 'csuf454')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'csuf')
+DB_USER = os.environ.get('DB_USER', 'your_db_user')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
 DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
 # For local testing or external connections, use host and port.
-DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
-DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
+# Ensure DB_PORT is set to the MySQL default if connecting directly via host/port
+DB_HOST = os.environ.get('DB_HOST', '34.169.250.193')
+DB_PORT = os.environ.get('DB_PORT', 3306) # MySQL default port is 3306
 
-
-# --- REMOVE THESE ROUTES if serving frontend separately ---
+# --- REMOVE OR COMMENT OUT THESE FRONTEND-SPECIFIC ROUTES ---
+# If your favicon.ico and other static files are handled by the frontend (Cloud Storage)
 # @app.route('/favicon.ico')
 # def favicon():
 #    return send_from_directory(app.static_folder, 'favicon.ico')
@@ -36,11 +37,12 @@ DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
 # def hello():
 #    return 'Hello World!'
 
-
-# --- This block is ONLY for local development, Gunicorn runs the app on Cloud Run ---
+# --- The if __name__ == '__main__': block is ONLY for local development ---
+# When deployed with Gunicorn, this block is typically not executed
+# as Gunicorn imports 'app' directly.
 if __name__ == '__main__':
-    # Cloud Run provides a PORT environment variable. Listen on it.
-    port = int(os.environ.get('PORT', 8080)) # Default to 8080 if PORT env var is not set (e.g., local)
+    # Use the PORT environment variable provided by Cloud Run, default to 8080
+    port = int(os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=port)
 
 
