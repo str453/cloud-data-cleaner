@@ -3,7 +3,8 @@ import datetime
 from functools import wraps
 import jwt # PyJWT library
 import bcrypt # For password hashing
-from flask import Flask, request, jsonify, g
+# Corrected: Combine both Flask imports into one line
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 import mysql.connector
 
