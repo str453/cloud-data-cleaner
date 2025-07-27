@@ -11,8 +11,8 @@ COPY . /app
 
 # Install production dependencies.
 # This assumes you have a requirements.txt file in your project root.
-RUN pip install --no-cache-dir gunicorn flask flask-cors PyJWT bcrypt mysql-connector-python
-
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 # Port to listen on.
 # This should match the port Gunicorn is configured to bind to.
 # Cloud Run will set the PORT environment variable.
