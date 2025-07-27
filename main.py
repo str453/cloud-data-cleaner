@@ -17,8 +17,8 @@ JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
 
 
-DB_USER = os.environ.get('DB_USER', 'your_db_user')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
+DB_USER = os.environ.get('DB_USER', 'csuf454')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'csuf')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
 # DB_SOCKET_PATH is automatically set by Cloud Run when --add-cloudsql-instances is used.
