@@ -2,4 +2,5 @@ Flask
 Flask-Cors
 PyJWT
 bcrypt
+gunicorn
 mysql-connector-python
