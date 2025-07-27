@@ -6,7 +6,7 @@ import jwt # PyJWT library
 import bcrypt # For password hashing
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
-import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
+import mysql.connector
 
 # --- ONLY ONE Flask app instance, at the very top ---
 app = Flask(__name__)
@@ -25,19 +25,7 @@ DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
 # For local testing or external connections, use host and port.
 DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
-DB_PORT = os.environ.get('DB_PORT', 3306) # <--- CORRECTED: Default to 3306 for MySQL
-
-
-# --- REMOVED: Frontend-specific routes (favicon.ico, /) and duplicate app = Flask(__name__) ---
-# The lines below are removed from your provided main.py to fix the issues.
-# from flask import Flask, send_from_directory # This import is no longer needed if you remove the routes
-# app = Flask(__name__) # THIS DUPLICATE LINE IS REMOVED
-# @app.route('/favicon.ico') # THIS ROUTE IS REMOVED
-# def favicon(): # THIS FUNCTION IS REMOVED
-#    return send_from_directory(app.static_folder, 'favicon.ico')
-# @app.route('/') # THIS ROUTE IS REMOVED
-# def hello(): # THIS FUNCTION IS REMOVED
-#    return 'Hello World!'
+DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
 
 
 # --- IMPORTANT: This block is ONLY for local development ---
