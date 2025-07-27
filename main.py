@@ -4,10 +4,11 @@ import datetime
 from functools import wraps
 import jwt # PyJWT library
 import bcrypt # For password hashing
-from flask import Flask, request, jsonify, g, send_from_directory
+from flask import Flask, request, jsonify, g # Removed send_from_directory, not needed if frontend is separate
 from flask_cors import CORS
-import mysql.connector # Or psycopg2 for PostgreSQL (install psycopg2-binary)
+import mysql.connector
 
+# --- IMPORTANT: Only ONE Flask app instance ---
 app = Flask(__name__)
 CORS(app, supports_credentials=True) # Enable CORS for frontend communication
 
@@ -15,35 +16,32 @@ JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'a_very_secure_random_key_that
 JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 3600 # Token expires in 1 hour
 
-
-DB_USER = os.environ.get('DB_USER', 'your_db_user')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_db_password')
+DB_USER = os.environ.get('DB_USER', 'csuf454')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'csuf')
 DB_NAME = os.environ.get('DB_NAME', 'csuf454')
 
 DB_SOCKET_PATH = os.environ.get('DB_SOCKET_PATH')
 
 # For local testing or external connections, use host and port.
-# DB_HOST will be used if DB_SOCKET_PATH is not set (e.g., local development)
 DB_HOST = os.environ.get('DB_HOST', '34.169.250.193') # Default for local
-# DB_PORT for MySQL connection, should be 3306
 DB_PORT = os.environ.get('DB_PORT', 3306) # Corrected default to 3306 for MySQL
 
 
-# Remove these lines if you are serving frontend separately (recommended)
+# --- REMOVE THESE ROUTES if serving frontend separately ---
 # @app.route('/favicon.ico')
 # def favicon():
 #    return send_from_directory(app.static_folder, 'favicon.ico')
 
-# Remove or modify this if you are serving frontend separately (recommended)
 # @app.route('/')
 # def hello():
-#    return 'Hello World! Your backend is running.'
+#    return 'Hello World!'
 
-# This block is for local execution only. Cloud Run will run your app using gunicorn or similar.
+
+# --- This block is ONLY for local development, Gunicorn runs the app on Cloud Run ---
 if __name__ == '__main__':
     # Cloud Run provides a PORT environment variable. Listen on it.
     port = int(os.environ.get('PORT', 8080)) # Default to 8080 if PORT env var is not set (e.g., local)
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=port)
 
 
 def get_db_connection():
