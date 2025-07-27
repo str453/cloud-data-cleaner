@@ -1,23 +1,25 @@
-# Use the official Python image as a base image
-FROM python:3.9-slim-buster
+# Use the official lightweight Python image.
+# https://hub.docker.com/_/python
+FROM python:3.10-slim-buster
 
-# Set the working directory in the container
+# Allow statements and log messages to immediately appear in the logs
+ENV PYTHONUNBUFFERED True
+
+# Copy local code to the container image.
 WORKDIR /app
+COPY . /app
 
-# Copy the requirements file into the container at /app
-COPY requirements.txt .
+# Install production dependencies.
+# This assumes you have a requirements.txt file in your project root.
+RUN pip install --no-cache-dir gunicorn flask flask-cors PyJWT bcrypt mysql-connector-python
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of your application code into the container at /app
-COPY . .
-
-# Expose the port that the application will listen on
-# Cloud Run expects the application to listen on the port specified by the PORT environment variable.
+# Port to listen on.
+# This should match the port Gunicorn is configured to bind to.
+# Cloud Run will set the PORT environment variable.
 ENV PORT 8080
-EXPOSE $PORT
 
-# Run the application using Gunicorn
-# 'main:app' refers to the 'app' Flask instance within 'main.py'
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "main:app"]
+# Run the web service on container startup.
+# The `main:app` part refers to:
+#   - `main`: The Python module (your main.py file)
+#   - `app`: The Flask application instance (app = Flask(__name__))
+CMD ["gunicorn", "--bind", "0.0.0.0:$(PORT)", "main:app"]
